@@ -7,19 +7,25 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
+
+
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $validatedData  = $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|max:55',
             'email' => 'email|required|unique:users',
             'password' => 'required|confirmed'
         ]);
-        
+
         $validatedData['password'] = Hash::make($request->password);
 
-        return response(['user' => $user, 'access_token' => $access_token], 201);
+        $user = User::create($validatedData);
+
+        $accessToken = $user->createToken('authToken')->accessToken;
+
+        return response(['user' => $user, 'access_token' => $accessToken], 201);
     }
 
     public function login(Request $request)
@@ -29,12 +35,13 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        if(!auth()->attempt($loginData)) {
-            return response(['message' => 'User does not exists, check your details'], 400);
+        if (!auth()->attempt($loginData)) {
+            return response(['message' => 'This User does not exist, check your details'], 400);
         }
 
         $accessToken = auth()->user()->createToken('authToken')->accessToken;
 
-        return response(['user' => auth()->user(), 'access_token' => $access_token]);
+        return response(['user' => auth()->user(), 'access_token' => $accessToken]);
     }
 }
+
